@@ -1,5 +1,7 @@
 import '@/app/globals.css';
  
+import Header from "@/app/components/Header";
+
 export default function RootLayout({
   children,
 }: {
@@ -7,7 +9,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-gray-50">
+        <Header />
+        {children}
+      </body>
     </html>
   );
 }
