@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { updateLanguage } from './actions';
 import DeleteButton from './DeleteButton';
-import { Language } from '@/types/page';
+import { Language } from '@/types/language';
 
 
 export default function LanguageRow({ lang }: { lang: Language }) {

@@ -8,9 +8,3 @@ export type Page<T> = {
   first: boolean;
   last: boolean;
 };
-
-export type Language = {
-  id: string;
-  shortName: string;
-  fullName: string;
-};

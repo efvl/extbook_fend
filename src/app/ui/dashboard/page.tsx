@@ -1,4 +1,4 @@
-import { Page } from "@/types/page";
+import { Page } from "@/types/api";
 import Pagination from "../components/pagination";
 import CreateLanguageForm from "./languages/CreateLanguageForm";
 import LanguageRow from "./languages/LanguageRow";

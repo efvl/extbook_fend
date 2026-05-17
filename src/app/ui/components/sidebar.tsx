@@ -6,8 +6,8 @@ import { Home, Users, FileText } from "lucide-react";
 
 const links = [
   { name: 'Dashboard', href: '/ui/dashboard', icon: Home },
+  { name: 'Books', href: '/ui/books', icon: FileText },
   { name: 'Customers', href: '/ui/customers', icon: Users },
-  { name: 'Invoices', href: '/ui/invoices', icon: FileText },
 ];
 
 export default function Sidebar() {
