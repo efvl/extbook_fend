@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createCard, updateCard } from '@/lib/api/cardService';
+import { createCard, deleteCardById, updateCard } from '@/lib/api/cardService';
 import { CardStatus } from '@/types/card';
 
 export async function saveCardAction(prevState: any, formData: FormData) {
@@ -35,4 +35,14 @@ export async function saveCardAction(prevState: any, formData: FormData) {
 
   revalidatePath('/ui/cards');
   redirect('/ui/cards');
+}
+
+export async function deleteCardAction(id: string): Promise<void> {
+  try {
+    await deleteCardById(id);
+    revalidatePath('/ui/cards');
+    // No return needed for success if you're just revalidating
+  } catch (error) {
+    console.error(error);
+  }
 }
