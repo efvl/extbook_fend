@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, FileText } from "lucide-react";
+import { Home, Users, FileText, CakeSlice } from "lucide-react";
 
 const links = [
   { name: 'Dashboard', href: '/ui/dashboard', icon: Home },
   { name: 'Books', href: '/ui/books', icon: FileText },
-  { name: 'Customers', href: '/ui/customers', icon: Users },
+  { name: 'Cards', href: '/ui/cards', icon: CakeSlice },
 ];
 
 export default function Sidebar() {
