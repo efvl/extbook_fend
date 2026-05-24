@@ -35,7 +35,7 @@ export default async function ImportPage({ params }: { params: Promise<{ id: str
             <textarea 
               name="rawText"
               required
-              rows={15}
+              rows={20}
               className="w-full px-4 py-3 border rounded-lg font-serif text-lg focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Paste the text from the book page here..."
             />

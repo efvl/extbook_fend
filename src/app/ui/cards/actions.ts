@@ -46,3 +46,16 @@ export async function deleteCardAction(id: string): Promise<void> {
     console.error(error);
   }
 }
+
+export async function handleUpdateCardAction(id: string, definition: string, status: CardStatus) {
+  try {
+    await updateCard(id, { definition, status });
+    
+    // Revalidate the reader page so that the updated card details fetch and render instantly
+    revalidatePath('/ui/books/[id]/reader/[pageNum]', 'page');
+    return { success: true };
+  } catch (error) {
+    console.error("Action error updating card:", error);
+    return { error: error instanceof Error ? error.message : "Failed to update card" };
+  }
+}

@@ -1,110 +1,180 @@
 import ReaderWord from "@/app/ui/words/readerWord";
-import { getWordsByBookAndPage } from "../../../../words/services";
+import { getWordsByBookAndPage, getWordById } from "../../../../words/services";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import ClearPageButton from "../../../ClearPageButton";
+import { getCardById } from "@/lib/api/cardService";
+import EditCardForm from "@/app/ui/cards/EditCardForm";
+import ReaderLine from "../../../ReaderLine";
 
-export default async function BookReaderPage({ params }: { params: Promise<{ id: string, pageNum: string }> }) {
+// Next.js 15 requires awaiting params and searchParams
+interface PageProps {
+  params: Promise<{ id: string; pageNum: string }>;
+  searchParams: Promise<{ wordId?: string }>;
+}
+
+export default async function BookReaderPage({ params, searchParams }: PageProps) {
   const { id, pageNum } = await params;
+  const resolvedSearchParams = await searchParams;
+// 1. Capture the active wordId on the server
+  const wordId = resolvedSearchParams?.wordId as string | undefined;
+
   const currentPage = parseInt(pageNum);
   const data = await getWordsByBookAndPage(id, currentPage);
 
-// Server Action to handle the "Jump to Page"
+// Fetch word data AND its corresponding flashcard data on the server
+  const selectedWord = wordId ? await getWordById(wordId) : null;
+  const selectedCard = selectedWord?.cardId ? await getCardById(selectedWord.cardId) : null;
+
+// 2. Pass or use it inside your Server Action
   async function jumpToPage(formData: FormData) {
     'use server';
     const targetPage = formData.get('targetPage');
+    
     if (targetPage) {
-      redirect(`/ui/books/${id}/reader/${targetPage}`);
+      // If a word is currently selected, append it to the redirection path
+      const queryString = wordId ? `?wordId=${wordId}` : '';
+      redirect(`/ui/books/${id}/reader/${targetPage}${queryString}`);
     }
   }
 
-if (!data) return <div className="p-10 text-center">Page not found or no words recorded.</div>;
+  if (!data) return <div className="p-10 text-center">Page not found or no words recorded.</div>;
 
-  return (
-    <div className="max-w-4xl mx-auto p-8">
+return (
+    <div className="max-w-7xl mx-auto p-8">
       {/* Navigation Header */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b pb-6">
         <div className="flex items-center gap-4">
           <Link href={`/ui/books`} className="text-gray-400 hover:text-gray-600 transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m15 18-6-6 6-6"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </Link>
           <h2 className="font-semibold text-gray-700">Reading Mode</h2>
-
-          {/* Edit Button */}
-          <Link href={`/ui/books/${id}/reader/${pageNum}/edit`} 
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold"
-            >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+          <Link href={`/ui/books/${id}/reader/${pageNum}/edit`} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
             Edit Page
           </Link>
-
-          {/* Import Button */}
-          <Link href={`/ui/books/${id}/import`}
-            className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs font-semibold"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+          <Link href={`/ui/books/${id}/import`} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs font-semibold">
             Import
           </Link>
-
-        {/* Clear Page Action */}
-        <ClearPageButton bookId={id} pageNum={currentPage} />
-
+          <ClearPageButton bookId={id} pageNum={currentPage} />
         </div>
-        {/* Jump to Page Form */}
+
         <div className="flex items-center gap-3">
           <form action={jumpToPage} className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Go to:</span>
-            <input 
-              name="targetPage"
-              type="number" 
-              min="1"
-              placeholder={currentPage.toString()}
-              className="w-16 px-2 py-1 border rounded text-center text-sm outline-none focus:ring-2 focus:ring-amber-500"
-            />
-            <button type="submit" className="hidden">Go</button>
+            <input name="targetPage" type="number" min="1" placeholder={currentPage.toString()} className="w-16 px-2 py-1 border rounded text-center text-sm outline-none focus:ring-2 focus:ring-amber-500" />
           </form>
-          
           <div className="h-4 w-px bg-gray-200 mx-2" />
-
           <div className="flex items-center gap-1">
-            <Link 
-              href={`/ui/books/${id}/reader/${currentPage - 1}`}
-              className={`p-2 hover:bg-gray-100 rounded-full transition ${currentPage <= 1 ? 'pointer-events-none opacity-20' : ''}`}
-            >
+            <Link href={`/ui/books/${id}/reader/${currentPage - 1}`} className={`p-2 hover:bg-gray-100 rounded-full transition ${currentPage <= 1 ? 'pointer-events-none opacity-20' : ''}`}>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </Link>
-            <span className="text-sm font-medium min-w-[80px] text-center">
-              Pg. {currentPage}
-            </span>
-            <Link 
-              href={`/ui/books/${id}/reader/${currentPage + 1}`}
-              className="p-2 hover:bg-gray-100 rounded-full transition"
-            >
+            <span className="text-sm font-medium min-w-[80px] text-center">Pg. {currentPage}</span>
+            <Link href={`/ui/books/${id}/reader/${currentPage + 1}`} className="p-2 hover:bg-gray-100 rounded-full transition">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </Link>
           </div>
         </div>
       </div>
 
-{/* The "Physical" Page Container */}
-      <div className="bg-[#fdfbf7] shadow-2xl border border-amber-100 min-h-[80vh] p-12 rounded-sm ring-1 ring-amber-50">
+      {/* Layout Splitter */}
+      <div className={`grid gap-8 transition-all duration-300 ${selectedWord ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1'}`}>
+        
+      {/* The "Physical" Page Container */}
+      <div className={`bg-[#fdfbf7] shadow-2xl border border-amber-100 min-h-[80vh] p-12 rounded-sm ring-1 ring-amber-50 transition-all ${selectedWord ? 'lg:col-span-2' : ''}`}>
         <div className="space-y-4">
           {Object.entries(data.lines)
             .sort(([a], [b]) => parseInt(a) - parseInt(b))
             .map(([lineNum, words]) => (
-              <div key={lineNum} className="flex flex-wrap items-baseline gap-x-2 border-l-2 border-transparent hover:border-amber-200 pl-4 transition-colors">
-                <span className="text-[10px] text-gray-300 w-4 select-none">{lineNum}</span>
-                {words.map((word) => (
-                    <ReaderWord key={word.id} word={word} />
-                ))}
-              </div>
+              <ReaderLine 
+                key={`${currentPage}-${lineNum}`} // Dynamic key combination ensures unique identity strings
+                lineNum={lineNum}
+                words={words}
+                wordId={wordId}
+                pageNum={currentPage}
+              />
             ))}
         </div>
+      </div>
+
+        {/* Sidebar Panel */}
+        {selectedWord && (
+          <div className="flex flex-col gap-6 self-start sticky top-6 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
+            
+            {/* WORD METRICS INSPECTOR PANEL */}
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-6 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="flex justify-between items-start border-b pb-4 mb-4">
+                <div>
+                  <span className="text-xs uppercase tracking-wider font-semibold text-gray-400">Inspecting Element</span>
+                  <h3 className="text-3xl font-serif font-bold text-gray-800 mt-1">{selectedWord.txtContent}</h3>
+                </div>
+                <Link href={`/ui/books/${id}/reader/${pageNum}`} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition" title="Close Panel">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </Link>
+              </div>
+
+              <div className="space-y-4 text-sm">
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 block mb-1">Word Status</label>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
+                    ${selectedWord.status === 'KNOWN' ? 'bg-green-50 text-green-700 border-green-200' : ''}
+                    ${selectedWord.status === 'LEARNING' ? 'bg-amber-50 text-amber-700 border-amber-200' : ''}
+                    ${selectedWord.status === 'NEW' ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}
+                  `}>
+                    ● {selectedWord.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100 text-center">
+                  <div>
+                    <span className="text-[10px] block text-gray-400 uppercase font-bold">Page</span>
+                    <span className="text-sm font-semibold text-gray-700">{selectedWord.pageNum ?? 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] block text-gray-400 uppercase font-bold">Line No.</span>
+                    <span className="text-sm font-semibold text-gray-700">{selectedWord.lineNum ?? 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] block text-gray-400 uppercase font-bold">Position</span>
+                    <span className="text-sm font-semibold text-gray-700">{selectedWord.wordNum ?? 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* FLASHCARD DESIGN PANEL */}
+            {selectedCard ? (
+              <div className="bg-gradient-to-br from-amber-50/40 via-white to-white border border-amber-200 rounded-xl shadow-lg p-6 animate-in fade-in slide-in-from-right-6 duration-300">
+                <div className="flex items-center gap-2 border-b border-amber-100 pb-3 mb-4">
+                  <svg className="text-amber-500" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" /><path d="M7 7h10M7 12h10M7 17h10"/>
+                  </svg>
+                  <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Connected Flashcard</h4>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-[11px] font-semibold text-gray-400 block uppercase">Card Term</span>
+                    <p className="text-xl font-semibold text-gray-800">{selectedCard.txtContent}</p>
+                  </div>
+
+                  {/* Clean delegation down to our update mode element */}
+                  <EditCardForm key={selectedCard.id} card={selectedCard} />
+
+                  <div className="pt-3 border-t border-gray-100 text-[11px] font-mono text-gray-400 break-all">
+                    <span>Card UUID: {selectedCard.id}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-6 text-center text-sm text-gray-400">
+                No system flashcard linked to this word entity.
+              </div>
+            )}
+
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
-

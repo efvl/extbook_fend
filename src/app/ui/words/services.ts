@@ -2,7 +2,7 @@ import { WordResponse } from "@/types/word";
 
 export async function getWordsByBookAndPage(bookId: string, pageNum: number) {
   const res = await fetch(
-    `${process.env.BACKEND_URL}/v1/word/by-book/${bookId}/page/${pageNum}?size=100`,
+    `${process.env.BACKEND_URL}/v1/word/by-book/${bookId}/page/${pageNum}?size=2000`,
     { cache: 'no-store' }
   );
   if (!res.ok) return null;
@@ -26,4 +26,17 @@ export async function getWordsByBookAndPage(bookId: string, pageNum: number) {
     totalPages: data.totalPages, 
     totalElements: data.totalElements 
   };
+}
+
+export async function getWordById(id: string): Promise<WordResponse | null> {
+  try {
+    const res = await fetch(`${process.env.BACKEND_URL}/v1/word/${id}`, {
+      cache: 'no-store' // Fetch fresh data dynamically
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error("Failed to fetch word details:", error);
+    return null;
+  }
 }

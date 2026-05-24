@@ -8,4 +8,5 @@ export interface WordResponse {
   txtContent: string;
   status: WordStatus;
   bookId: string;    // UUID
+  cardId: string;    // UUID
 }

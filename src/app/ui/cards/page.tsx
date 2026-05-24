@@ -3,6 +3,7 @@ import {TableContainer, Td, Th } from './../components/table'
 import { DeleteCardButton } from './DeleteCardButton';
 import { CardResponse } from '@/types/card';
 import { getCards } from '@/lib/api/cardService';
+import Pagination from '../components/pagination';
 
 export default async function BooksPage({ searchParams }: { searchParams: any }) {
   const params = await searchParams;
@@ -56,6 +57,7 @@ export default async function BooksPage({ searchParams }: { searchParams: any })
             ))}
           </tbody>
         </TableContainer>
+        <Pagination page={data.number} totalPages={data.totalPages} />
     </div>
   );
 }
