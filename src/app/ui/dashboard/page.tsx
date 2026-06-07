@@ -2,6 +2,7 @@ import { Page } from "@/types/api";
 import Pagination from "../components/pagination";
 import CreateLanguageForm from "./languages/CreateLanguageForm";
 import LanguageRow from "./languages/LanguageRow";
+import { serverFetch } from "@/lib/serverFetch";
 
 type Language = {
   id: string;
@@ -10,8 +11,8 @@ type Language = {
 };
 
 async function getLanguages(page = 0, size = 10): Promise<Page<Language>> {
-  const res = await fetch(
-    `http://localhost:3000/api/languages?page=${page}&size=${size}`,
+  const res = await serverFetch(
+    `${process.env.BACKEND_URL}/v1/lang/all?page=${page}&size=${size}`,
     { cache: "no-store" }
   );
 
