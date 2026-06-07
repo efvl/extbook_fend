@@ -1,4 +1,4 @@
-export type WordStatus = 'NEW' | 'LEARNING' | 'KNOWN';
+export type WordStatus = 'DRAFT' | 'NEW' | 'LEARNING' | 'IN_PROCESS' | 'READY' | 'KNOWN';
 
 export interface WordResponse {
   id: string;        // UUIDs are handled as strings in TypeScript
