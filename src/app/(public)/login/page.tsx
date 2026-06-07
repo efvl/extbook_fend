@@ -20,7 +20,7 @@ export default function LoginPage() {
     });
 
     if (res.ok) {
-      router.push("/ui/dashboard");
+      router.push("/dashboard");
     } else {
       setError("Invalid username or password");
     }
