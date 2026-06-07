@@ -4,20 +4,19 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { WordResponse, WordStatus } from '@/types/word';
 import { getCardById, updateCard } from '@/lib/api/cardService';
+import { serverFetch } from '@/lib/serverFetch';
 
 const BACKEND_URL = process.env.BACKEND_URL;
 
 export async function savePageWords(bookId: string, pageNum: number, formData: FormData) {
-  // Extract all word IDs and their new content from the form
   const wordIds = formData.getAll('wordId') as string[];
   const contents = formData.getAll('txtContent') as string[];
   const lineNums = formData.getAll('lineNum') as string[];
   const wordNums = formData.getAll('wordNum') as string[];
   const statuses = formData.getAll('status') as string[];
 
-  // Create an array of objects to send to the backend
   const updates = wordIds.map((id, index) => ({
-    id: id, // Used by the service to identify the record
+    id: id,
     bookId: bookId,
     pageNum: pageNum,
     lineNum: lineNums[index] ? Number(lineNums[index]) : null,
@@ -26,7 +25,7 @@ export async function savePageWords(bookId: string, pageNum: number, formData: F
     status: statuses[index]
   }));
 
-  const res = await fetch(`${BACKEND_URL}/v1/word/bulk`, {
+  const res = await serverFetch(`${BACKEND_URL}/v1/word/bulk`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
@@ -44,8 +43,8 @@ export async function savePageWords(bookId: string, pageNum: number, formData: F
 
 export async function getWordById(id: string): Promise<WordResponse | null> {
   try {
-    const res = await fetch(`${BACKEND_URL}/v1/word/${id}`, {
-      cache: 'no-store' // Fetch fresh data dynamically
+    const res = await serverFetch(`${BACKEND_URL}/v1/word/${id}`, {
+      cache: 'no-store'
     });
     if (!res.ok) return null;
     return await res.json();
@@ -56,25 +55,24 @@ export async function getWordById(id: string): Promise<WordResponse | null> {
 }
 
 export async function toggleWordStatus(id: string, currentStatus: WordStatus) {
-  // Logic: NEW -> LEARNING -> KNOWN -> NEW
   const statusMap: Record<WordStatus, WordStatus> = {
     'NEW': 'LEARNING',
     'LEARNING': 'KNOWN',
     'KNOWN': 'NEW'
   };
-  
+
   const newStatus = statusMap[currentStatus];
 
-  const res = await fetch(`${BACKEND_URL}/v1/word/${id}/status`, {
+  const res = await serverFetch(`${BACKEND_URL}/v1/word/${id}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newStatus), 
+    body: JSON.stringify(newStatus),
   });
 
   if (!res.ok) {
-      const error = await res.json();
-      return { error: error.message || "Failed to update word status" };
-    }
+    const error = await res.json();
+    return { error: error.message || "Failed to update word status" };
+  }
 
   revalidatePath('/ui/books/[id]/reader/[pageNum]', 'page');
 }
@@ -86,48 +84,44 @@ export async function createWord(prevState: any, formData: FormData) {
     lineNum: formData.get('lineNum') ? Number(formData.get('lineNum')) : null,
     wordNum: formData.get('wordNum') ? Number(formData.get('wordNum')) : null,
     txtContent: formData.get('txtContent'),
-    status: formData.get('status'), // Matches WordStatus Enum
+    status: formData.get('status'),
   };
 
-  const res = await fetch(`${BACKEND_URL}/v1/word`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+  const res = await serverFetch(`${BACKEND_URL}/v1/word`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
 
   if (!res.ok) {
-      const error = await res.json();
-      return { error: error.message || "Failed to create word" };
-    }
+    const error = await res.json();
+    return { error: error.message || "Failed to create word" };
+  }
 
   revalidatePath('/ui/words');
-  // Redirect back to the book's word list if bookId was provided
   redirect(`/ui/words?bookId=${data.bookId}`);
 }
 
 export async function saveWord(prevState: any, formData: FormData) {
-  const id = formData.get('id'); 
+  const id = formData.get('id');
   const rawTxt = formData.get('txtContent');
   const bookId = formData.get('bookId');
   console.log(rawTxt);
 
-  // 1. Clean and normalize text
   const cardDataTxt = rawTxt
     ? String(rawTxt)
         .toLowerCase()
-        // Updated regex: Handles common punctuation safely
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "") 
-        .replace(/\s+/g, " ")                           
-        .trim()                                         
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
     : '';
-  
-  // 2. Build Payload
+
   const payload = {
     bookId: bookId,
     pageNum: formData.get('pageNum') ? Number(formData.get('pageNum')) : null,
     lineNum: formData.get('lineNum') ? Number(formData.get('lineNum')) : null,
     wordNum: formData.get('wordNum') ? Number(formData.get('wordNum')) : null,
-    txtContent: rawTxt, // You can reuse rawTxt variable here
+    txtContent: rawTxt,
     status: formData.get('status'),
     cardText: cardDataTxt,
   };
@@ -140,9 +134,8 @@ export async function saveWord(prevState: any, formData: FormData) {
   const url = id ? `${baseUrl}/v1/word/${id}` : `${baseUrl}/v1/word`;
   const method = id ? 'PUT' : 'POST';
 
-  // 3. Network Request Block
   try {
-    const res = await fetch(url, {
+    const res = await serverFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -155,13 +148,12 @@ export async function saveWord(prevState: any, formData: FormData) {
     return { error: "Network error. Failed to connect to the backend server." };
   }
 
-  // 4. Cache Revalidation & Redirect (Keep outside the try/catch block)
   revalidatePath('/ui/words');
   redirect(`/ui/words?bookId=${bookId || ''}`);
 }
 
 export async function deleteWord(id: string) {
-  await fetch(`${BACKEND_URL}/v1/word/${id}`, { method: 'DELETE' });
+  await serverFetch(`${BACKEND_URL}/v1/word/${id}`, { method: 'DELETE' });
   revalidatePath('/ui/words');
 }
 
@@ -169,7 +161,6 @@ export async function importPageText(bookId: string, formData: FormData) {
   const rawPageNum = formData.get('pageNum');
   const rawText = formData.get('rawText') as string;
 
-  // Fix 1: Safe check for pageNum (allows page 0 if valid in your app)
   if (!rawText || rawPageNum === null || rawPageNum === '') {
     return { error: "Page number and text are required." };
   }
@@ -183,34 +174,30 @@ export async function importPageText(bookId: string, formData: FormData) {
   const wordsToCreate: any[] = [];
 
   lines.forEach((line, lineIdx) => {
-    // Split by whitespace and filter out empty strings
     const words = line.trim().split(/\s+/).filter(w => w.length > 0);
-    
+
     words.forEach((wordText, wordIdx) => {
-      // Clear punctuation and lowercase
       const cardDataTxt = wordText
         ? String(wordText)
             .toLowerCase()
-            .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "") 
-            .trim()                                         
+            .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "")
+            .trim()
         : '';
 
-      // Fix 2: Skip tokens that were strictly punctuation (e.g., "---" or "...")
       if (!cardDataTxt) return;
 
       wordsToCreate.push({
         bookId: bookId,
         pageNum: pageNum,
-        lineNum: lineIdx + 1,   // 1-based indexing
-        wordNum: wordIdx + 1,   // 1-based indexing
+        lineNum: lineIdx + 1,
+        wordNum: wordIdx + 1,
         txtContent: wordText,
-        status: 'NEW',           // Default status for imports
+        status: 'NEW',
         cardText: cardDataTxt,
       });
     });
   });
 
-  // Guard against sending an empty payload to the backend
   if (wordsToCreate.length === 0) {
     return { error: "No valid words found to import." };
   }
@@ -219,7 +206,7 @@ export async function importPageText(bookId: string, formData: FormData) {
   if (!baseUrl) return { error: "Internal server configuration error." };
 
   try {
-    const res = await fetch(`${baseUrl}/v1/word/bulk`, {
+    const res = await serverFetch(`${baseUrl}/v1/word/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(wordsToCreate),
@@ -232,31 +219,34 @@ export async function importPageText(bookId: string, formData: FormData) {
     return { error: "Network error: Failed to reach backend." };
   }
 
-  // Fix 3: Let redirect handle moving the user and refreshing the view target
   redirect(`/ui/books/${bookId}/reader/${pageNum}`);
 }
 
 export async function incrementLineProgress(cardIds: string[]) {
   try {
-    // Filter out unique, valid card IDs to minimize unnecessary network calls
     const uniqueCardIds = Array.from(new Set(cardIds)).filter(Boolean);
 
-    // Run parallel PATCH/PUT updates to your Java Backend
-    await Promise.all(
-      uniqueCardIds.map(async (id) => {
-        const currentCard = await getCardById(id);
-        if (currentCard) {
-          const nextCount = (currentCard.actualCount || 0) + 1;
-          return updateCard(id, { actualCount: nextCount });
-        }
-      })
-    );
+    if (uniqueCardIds.length === 0) {
+      return { success: true, updatedCount: 0 };
+    }
 
-    // Refresh the layout cache so both the reader page and the sidebar sync instantly
+    const response = await serverFetch(`${BACKEND_URL}/v1/card/actual-count`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(uniqueCardIds),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend responded with status: ${response.status}`);
+    }
+
+    const updatedCount = await response.json();
+
     revalidatePath('/ui/books/[id]/reader/[pageNum]', 'page');
-    return { success: true };
+
+    return { success: true, updatedCount };
   } catch (error) {
-    console.error("Failed to batch update line progress:", error);
+    console.error("Failed to bulk update line progress:", error);
     return { error: "Failed to update progress for this line." };
   }
 }

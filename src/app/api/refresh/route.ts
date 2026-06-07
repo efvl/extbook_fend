@@ -1,54 +1,42 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { SignJWT } from "jose";
-import { v4 as uuidv4 } from "uuid";
-import {
-  verifyRefreshToken,
-  saveRefreshToken,
-  revokeRefreshToken,
-} from "@/lib/tokenStore";
 import { AUTH_COOKIES } from "@/lib/authConstants";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
+const BACKEND_URL = process.env.BACKEND_URL!;
 
 export async function POST() {
   const cookieStore = await cookies();
-  const oldToken = cookieStore.get("refresh_token")?.value;
+  const oldRefreshToken = cookieStore.get(AUTH_COOKIES.refresh)?.value;
 
-  if (!oldToken) {
+  if (!oldRefreshToken) {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 
-  const username = verifyRefreshToken(oldToken);
-  if (!username) {
+  const backendRes = await fetch(`${BACKEND_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: oldRefreshToken }),
+  });
+
+  if (!backendRes.ok) {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 
-  // 🔁 Rotate refresh token
-  revokeRefreshToken(oldToken);
-  const newRefreshToken = uuidv4();
-  saveRefreshToken(newRefreshToken, username, 7 * 24 * 60 * 60);
-
-  // 🔐 Issue new access token (15 minutes)
-  const newAccessToken = await new SignJWT({ username })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("15m")
-    .sign(JWT_SECRET);
+  const { accessToken, refreshToken, expiresIn } = await backendRes.json();
 
   cookieStore.set({
     name: AUTH_COOKIES.access,
-    value: newAccessToken,
+    value: accessToken,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 15 * 60,
+    maxAge: expiresIn,
     sameSite: "strict",
   });
 
   cookieStore.set({
     name: AUTH_COOKIES.refresh,
-    value: newRefreshToken,
+    value: refreshToken,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",

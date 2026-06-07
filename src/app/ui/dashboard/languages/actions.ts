@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from "next/cache";
+import { serverFetch } from "@/lib/serverFetch";
 
 const BACKEND_URL = process.env.BACKEND_URL!;
 
@@ -11,7 +12,7 @@ export async function createLanguage(formData: FormData) {
     fullName: formData.get("fullName"),
   };
 
-  const res = await fetch(`${BACKEND_URL}/v1/lang`, {
+  const res = await serverFetch(`${BACKEND_URL}/v1/lang`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -32,7 +33,7 @@ export async function updateLanguage(id: string, formData: FormData) {
     fullName: formData.get("fullName"),
   };
 
-  const res = await fetch(`${BACKEND_URL}/v1/lang/${id}`, {
+  const res = await serverFetch(`${BACKEND_URL}/v1/lang/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -47,7 +48,7 @@ export async function updateLanguage(id: string, formData: FormData) {
 }
 
 export async function deleteLanguage(id: string) {
-  const res = await fetch(`${BACKEND_URL}/v1/lang/${id}`, {
+  const res = await serverFetch(`${BACKEND_URL}/v1/lang/${id}`, {
     method: "DELETE",
     cache: "no-store",
   });
