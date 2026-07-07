@@ -8,6 +8,8 @@ export interface CardResponse {
   targetCount: number;
   actualCount: number;
   status: CardStatus;
+  languageId: string | null;
+  languageShortName: string | null;
 }
 
 export interface CreateCardRequest {

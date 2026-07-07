@@ -21,5 +21,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/(dashboard|books|cards|words)(.*)"],
+  matcher: ["/(dashboard|books|cards|words|lessons)(.*)"],
 };

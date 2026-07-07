@@ -4,8 +4,18 @@ import { serverFetch } from '@/lib/serverFetch';
 
 const BACKEND_URL = process.env.BACKEND_URL;
 
-export async function getCards(page = 0): Promise<Page<CardResponse>> {
-  const res = await serverFetch(`${BACKEND_URL}/v1/card?page=${page}&size=10`, {
+export async function getCards(
+  page = 0,
+  status?: string,
+  content?: string,
+  languageId?: string,
+): Promise<Page<CardResponse>> {
+  const params = new URLSearchParams({ page: String(page), size: '10' });
+  if (status) params.set('status', status);
+  if (content) params.set('content', content);
+  if (languageId) params.set('languageId', languageId);
+
+  const res = await serverFetch(`${BACKEND_URL}/v1/card?${params}`, {
     cache: 'no-store',
   });
 

@@ -4,10 +4,29 @@ import { DeleteCardButton } from './DeleteCardButton';
 import { CardResponse } from '@/types/card';
 import { getCards } from '@/lib/api/cardService';
 import Pagination from '@/components/pagination';
+import CardFilterBar from './CardFilterBar';
+import { serverFetch } from '@/lib/serverFetch';
+import { Page } from '@/types/api';
+
+type Language = { id: string; shortName: string; fullName: string };
+
+async function getLanguages(): Promise<Language[]> {
+  const res = await serverFetch(
+    `${process.env.BACKEND_URL}/v1/lang/all?page=0&size=100`,
+    { cache: 'no-store' },
+  );
+  if (!res.ok) return [];
+  const data: Page<Language> = await res.json();
+  return data.content;
+}
 
 export default async function CardsPage({ searchParams }: { searchParams: any }) {
   const params = await searchParams;
-  const data = await getCards(params.page || 0);
+
+  const [data, languages] = await Promise.all([
+    getCards(params.page || 0, params.status, params.content, params.languageId),
+    getLanguages(),
+  ]);
 
   return (
     <div className="p-8">
@@ -21,9 +40,12 @@ export default async function CardsPage({ searchParams }: { searchParams: any })
         </Link>
       </div>
 
+      <CardFilterBar languages={languages} />
+
       <TableContainer>
         <thead className="bg-gray-50">
           <tr>
+            <Th>Language</Th>
             <Th>Content</Th>
             <Th>Definition</Th>
             <Th>Target</Th>
@@ -35,6 +57,11 @@ export default async function CardsPage({ searchParams }: { searchParams: any })
         <tbody className="divide-y divide-gray-200 bg-white">
           {data.content.map((card: CardResponse) => (
             <tr key={card.id} className="hover:bg-gray-50 transition-colors">
+              <Td>
+                <span className="text-xs font-medium text-gray-500">
+                  {card.languageShortName ?? '—'}
+                </span>
+              </Td>
               <Td className="font-medium text-gray-900">
                 <div className="max-w-xs truncate" title={card.txtContent}>
                   {card.txtContent}
