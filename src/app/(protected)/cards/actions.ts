@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createCard, deleteCardById, updateCard } from '@/lib/api/cardService';
 import { CardStatus } from '@/types/card';
+import { serverFetch } from '@/lib/serverFetch';
 
 export async function saveCardAction(prevState: any, formData: FormData) {
   const id = formData.get('id') as string | null;
@@ -44,6 +45,19 @@ export async function deleteCardAction(id: string): Promise<void> {
   } catch (error) {
     console.error(error);
   }
+}
+
+export async function addCardToLessonAction(lessonId: string, cardId: string): Promise<void> {
+  const res = await serverFetch(
+    `${process.env.BACKEND_URL}/v1/lesson/${lessonId}/cards`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([cardId]),
+    },
+  );
+  if (!res.ok) throw new Error('Failed to add card to lesson');
+  revalidatePath('/cards');
 }
 
 export async function handleUpdateCardAction(id: string, definition: string, status: CardStatus) {

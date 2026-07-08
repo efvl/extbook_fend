@@ -5,10 +5,13 @@ import { CardResponse } from '@/types/card';
 import { getCards } from '@/lib/api/cardService';
 import Pagination from '@/components/pagination';
 import CardFilterBar from './CardFilterBar';
+import LessonSelector from './LessonSelector';
+import { AddToLessonButton } from './AddToLessonButton';
 import { serverFetch } from '@/lib/serverFetch';
 import { Page } from '@/types/api';
 
 type Language = { id: string; shortName: string; fullName: string };
+type Lesson = { id: string; name: string; type: string; languageShortName: string | null; cardIds: string[] };
 
 async function getLanguages(): Promise<Language[]> {
   const res = await serverFetch(
@@ -20,13 +23,29 @@ async function getLanguages(): Promise<Language[]> {
   return data.content;
 }
 
+async function getLessons(): Promise<Lesson[]> {
+  const res = await serverFetch(
+    `${process.env.BACKEND_URL}/v1/lesson/all`,
+    { cache: 'no-store' },
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.content ?? [];
+}
+
 export default async function CardsPage({ searchParams }: { searchParams: any }) {
   const params = await searchParams;
+  const lessonId: string | undefined = params.lessonId;
 
-  const [data, languages] = await Promise.all([
+  const [data, languages, lessons] = await Promise.all([
     getCards(params.page || 0, params.status, params.content, params.languageId),
     getLanguages(),
+    getLessons(),
   ]);
+
+  const lessonCardIds = new Set(
+    lessonId ? (lessons.find((l) => l.id === lessonId)?.cardIds ?? []) : [],
+  );
 
   return (
     <div className="p-8">
@@ -39,6 +58,8 @@ export default async function CardsPage({ searchParams }: { searchParams: any })
           + Add Card
         </Link>
       </div>
+
+      <LessonSelector lessons={lessons} />
 
       <CardFilterBar languages={languages} />
 
@@ -73,6 +94,16 @@ export default async function CardsPage({ searchParams }: { searchParams: any })
               <Td>{card.status}</Td>
               <Td align="right">
                 <div className="flex justify-end items-center gap-3">
+                  {lessonId && (
+                    <>
+                      {lessonCardIds.has(card.id) ? (
+                        <span className="text-xs font-medium text-emerald-600">In lesson ✓</span>
+                      ) : (
+                        <AddToLessonButton lessonId={lessonId} cardId={card.id} />
+                      )}
+                      <span className="text-gray-200">|</span>
+                    </>
+                  )}
                   <Link href={`/cards/${card.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
                     Edit
                   </Link>

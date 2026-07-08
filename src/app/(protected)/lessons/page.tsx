@@ -72,6 +72,17 @@ export default async function LessonsPage({ searchParams }: { searchParams: any 
               <Td>{lesson.cardIds?.length ?? 0}</Td>
               <Td align="right">
                 <div className="flex justify-end items-center gap-3">
+                  {lesson.cardIds?.length > 0 && (
+                    <>
+                      <Link
+                        href={`/lessons/${lesson.id}/learn`}
+                        className="text-indigo-600 hover:text-indigo-800 font-medium"
+                      >
+                        Learn
+                      </Link>
+                      <span className="text-gray-200">|</span>
+                    </>
+                  )}
                   <Link
                     href={`/lessons/${lesson.id}`}
                     className="text-blue-600 hover:text-blue-800 font-medium"

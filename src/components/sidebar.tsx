@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, FileText, CakeSlice, BookOpen } from "lucide-react";
+import { Home, FileText, CakeSlice, BookOpen, Type } from "lucide-react";
 
 const links = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Books', href: '/books', icon: FileText },
+  { name: 'Words', href: '/words', icon: Type },
   { name: 'Cards', href: '/cards', icon: CakeSlice },
   { name: 'Lessons', href: '/lessons', icon: BookOpen },
 ];

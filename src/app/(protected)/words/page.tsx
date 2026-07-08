@@ -4,6 +4,10 @@ import { TableContainer, Td, Th } from '@/components/table';
 import { deleteWord } from "./actions";
 import Link from "next/link";
 import { serverFetch } from '@/lib/serverFetch';
+import WordBookFilter from './WordBookFilter';
+
+type Language = { id: string; shortName: string; fullName: string };
+type Book = { id: string; title: string; authors: string; language: Language };
 
 async function getWords(page = 0, bookId?: string) {
   const baseUrl = process.env.BACKEND_URL;
@@ -13,27 +17,47 @@ async function getWords(page = 0, bookId?: string) {
     : `${baseUrl}/v1/word?page=${page}&size=10`;
 
   const res = await serverFetch(url, { cache: 'no-store' });
-  if (!res.ok) return { content: [], totalPages: 0 };
+  if (!res.ok) return { content: [], totalPages: 0, number: 0 };
   return res.json();
+}
+
+async function getBooks(): Promise<Book[]> {
+  const res = await serverFetch(
+    `${process.env.BACKEND_URL}/v1/book?page=0&size=200`,
+    { cache: 'no-store' },
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.content ?? [];
+}
+
+async function getLanguages(): Promise<Language[]> {
+  const res = await serverFetch(
+    `${process.env.BACKEND_URL}/v1/lang/all?page=0&size=100`,
+    { cache: 'no-store' },
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.content ?? [];
 }
 
 export default async function WordsPage({
   searchParams
 }: {
-  searchParams: Promise<{ page?: string; bookId?: string }>
+  searchParams: Promise<{ page?: string; bookId?: string; langId?: string }>
 }) {
   const params = await searchParams;
   const page = Number(params.page || 0);
   const bookId = params.bookId;
+  const langId = params.langId;
 
-  const data = await getWords(page, bookId);
+  const [data, books, languages] = await Promise.all([
+    getWords(page, bookId),
+    getBooks(),
+    getLanguages(),
+  ]);
 
-  let bookTitle = "";
-  if (bookId) {
-    const bookRes = await serverFetch(`${process.env.BACKEND_URL}/v1/book/${bookId}`);
-    const bookData = await bookRes.json();
-    bookTitle = bookData.title;
-  }
+  const bookTitle = books.find((b) => b.id === bookId)?.title ?? '';
 
   return (
     <div className="p-8">
@@ -42,7 +66,7 @@ export default async function WordsPage({
           <h1 className="text-2xl font-bold text-gray-800">
             {bookId ? `Vocabulary for: ${bookTitle}` : "All Words"}
           </h1>
-          {bookId && (
+          {(bookId || langId) && (
             <Link href="/words" className="text-xs text-blue-600 hover:underline">
               ← Clear filter and show all words
             </Link>
@@ -53,6 +77,8 @@ export default async function WordsPage({
           + Add Word
         </Link>
       </div>
+
+      <WordBookFilter languages={languages} books={books} />
 
       <TableContainer>
         <thead className="bg-gray-50">
