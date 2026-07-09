@@ -2,7 +2,7 @@ import BookForm from "../bookForm";
 import { serverFetch } from "@/lib/serverFetch";
 
 export default async function ManageBookPage() {
-  const langRes = await serverFetch(`${process.env.BACKEND_URL}/v1/lang/all?size=100`);
+  const langRes = await serverFetch(`${process.env.BACKEND_URL}/v1/lang/enabled?size=100`);
   const langData = await langRes.json();
 
   return (

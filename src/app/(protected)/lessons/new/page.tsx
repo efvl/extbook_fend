@@ -6,7 +6,7 @@ type Language = { id: string; shortName: string; fullName: string };
 
 async function getLanguages(): Promise<Language[]> {
   const res = await serverFetch(
-    `${process.env.BACKEND_URL}/v1/lang/all?page=0&size=100`,
+    `${process.env.BACKEND_URL}/v1/lang/enabled?page=0&size=100`,
     { cache: 'no-store' },
   );
   if (!res.ok) return [];

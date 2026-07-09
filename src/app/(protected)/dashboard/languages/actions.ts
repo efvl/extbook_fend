@@ -54,7 +54,20 @@ export async function deleteLanguage(id: string) {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to delete language");
+    throw new Error("Failed to disable language");
+  }
+
+  revalidatePath("/dashboard");
+}
+
+export async function enableLanguage(id: string) {
+  const res = await serverFetch(`${BACKEND_URL}/v1/lang/${id}/enable`, {
+    method: "PUT",
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to enable language");
   }
 
   revalidatePath("/dashboard");

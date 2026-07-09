@@ -5,7 +5,7 @@ export default async function ManageBookPage({ params }: { params: Promise<{ id:
   const { id } = await params;
 
   const [langRes, bookRes] = await Promise.all([
-    serverFetch(`${process.env.BACKEND_URL}/v1/lang/all?size=100`),
+    serverFetch(`${process.env.BACKEND_URL}/v1/lang/enabled?size=100`),
     serverFetch(`${process.env.BACKEND_URL}/v1/book/${id}`),
   ]);
 

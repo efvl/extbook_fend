@@ -2,32 +2,49 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useCallback } from 'react';
+import {
+  setSelectedLessonCookie,
+  clearSelectedLessonCookie,
+} from '@/lib/selectedLessonActions';
 
 type Lesson = { id: string; name: string; type: string; languageShortName: string | null };
 
-export default function LessonSelector({ lessons }: { lessons: Lesson[] }) {
+export default function LessonSelector({
+  lessons,
+  initialLessonId,
+}: {
+  lessons: Lesson[];
+  initialLessonId?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentLessonId = searchParams.get('lessonId') ?? '';
+  const currentLessonId = searchParams.get('lessonId') ?? initialLessonId ?? '';
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value;
       const params = new URLSearchParams(searchParams.toString());
-      if (e.target.value) {
-        params.set('lessonId', e.target.value);
+      if (value) {
+        params.set('lessonId', value);
+        const lesson = lessons.find((l) => l.id === value);
+        if (lesson) {
+          setSelectedLessonCookie(lesson.id, lesson.name, lesson.type).catch(console.error);
+        }
       } else {
         params.delete('lessonId');
+        clearSelectedLessonCookie().catch(console.error);
       }
       params.set('page', '0');
       router.push(`${pathname}?${params.toString()}`);
     },
-    [router, pathname, searchParams],
+    [router, pathname, searchParams, lessons],
   );
 
   const clearLesson = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete('lessonId');
+    clearSelectedLessonCookie().catch(console.error);
     router.push(`${pathname}?${params.toString()}`);
   }, [router, pathname, searchParams]);
 

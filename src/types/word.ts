@@ -1,12 +1,15 @@
 export type WordStatus = 'DRAFT' | 'NEW' | 'LEARNING' | 'IN_PROCESS' | 'READY' | 'KNOWN';
 
 export interface WordResponse {
-  id: string;        // UUIDs are handled as strings in TypeScript
+  id: string;
   pageNum: number | null;
   lineNum: number | null;
   wordNum: number | null;
   txtContent: string;
   status: WordStatus;
-  bookId: string;    // UUID
-  cardId: string;    // UUID
+  bookId: string;
+  bookTitle: string | null;
+  cardId: string;
+  languageId: string | null;
+  languageShortName: string | null;
 }

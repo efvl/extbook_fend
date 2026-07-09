@@ -6,9 +6,9 @@ export default function DeleteButton({ id }: { id: string }) {
   return (
     <button
       onClick={() => deleteLanguage(id)}
-      className="text-red-600 hover:underline"
+      className="text-red-500 hover:text-red-700 font-semibold"
     >
-      Delete
+      Disable
     </button>
   );
 }

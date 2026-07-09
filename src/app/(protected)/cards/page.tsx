@@ -9,13 +9,14 @@ import LessonSelector from './LessonSelector';
 import { AddToLessonButton } from './AddToLessonButton';
 import { serverFetch } from '@/lib/serverFetch';
 import { Page } from '@/types/api';
+import { readSelectedLessonCookie } from '@/lib/selectedLessonActions';
 
 type Language = { id: string; shortName: string; fullName: string };
 type Lesson = { id: string; name: string; type: string; languageShortName: string | null; cardIds: string[] };
 
 async function getLanguages(): Promise<Language[]> {
   const res = await serverFetch(
-    `${process.env.BACKEND_URL}/v1/lang/all?page=0&size=100`,
+    `${process.env.BACKEND_URL}/v1/lang/enabled?page=0&size=100`,
     { cache: 'no-store' },
   );
   if (!res.ok) return [];
@@ -35,17 +36,26 @@ async function getLessons(): Promise<Lesson[]> {
 
 export default async function CardsPage({ searchParams }: { searchParams: any }) {
   const params = await searchParams;
-  const lessonId: string | undefined = params.lessonId;
 
-  const [data, languages, lessons] = await Promise.all([
+  const [data, languages, lessons, cookieLesson] = await Promise.all([
     getCards(params.page || 0, params.status, params.content, params.languageId),
     getLanguages(),
     getLessons(),
+    readSelectedLessonCookie(),
   ]);
+
+  const lessonId: string | undefined = params.lessonId ?? cookieLesson?.id;
 
   const lessonCardIds = new Set(
     lessonId ? (lessons.find((l) => l.id === lessonId)?.cardIds ?? []) : [],
   );
+
+  const backParams = new URLSearchParams();
+  if (params.page)       backParams.set('page', params.page);
+  if (params.status)     backParams.set('status', params.status);
+  if (params.content)    backParams.set('content', params.content);
+  if (params.languageId) backParams.set('languageId', params.languageId);
+  const backUrl = `/cards${backParams.size > 0 ? '?' + backParams.toString() : ''}`;
 
   return (
     <div className="p-8">
@@ -59,7 +69,7 @@ export default async function CardsPage({ searchParams }: { searchParams: any })
         </Link>
       </div>
 
-      <LessonSelector lessons={lessons} />
+      <LessonSelector lessons={lessons} initialLessonId={cookieLesson?.id} />
 
       <CardFilterBar languages={languages} />
 
@@ -104,6 +114,10 @@ export default async function CardsPage({ searchParams }: { searchParams: any })
                       <span className="text-gray-200">|</span>
                     </>
                   )}
+                  <Link href={`/cards/${card.id}/words?back=${encodeURIComponent(backUrl)}`} className="text-purple-600 hover:text-purple-800 font-medium">
+                    Words
+                  </Link>
+                  <span className="text-gray-200">|</span>
                   <Link href={`/cards/${card.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
                     Edit
                   </Link>

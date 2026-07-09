@@ -8,6 +8,7 @@ type Language = {
   id: string;
   shortName: string;
   fullName: string;
+  isEnable: boolean;
 };
 
 type LanguageStats = {
@@ -140,6 +141,7 @@ export default async function DashboardPage({
             <tr>
               <th className="px-6 py-3 text-left font-semibold text-gray-900">Short Name</th>
               <th className="px-6 py-3 text-left font-semibold text-gray-900">Full Name</th>
+              <th className="px-6 py-3 text-left font-semibold text-gray-900">Status</th>
               <th className="px-6 py-3 text-right font-semibold text-gray-900">Actions</th>
             </tr>
           </thead>
